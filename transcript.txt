@@ -1,0 +1,46 @@
+Build transcript — AIProve bounty eth-pnl-fixed
+Agent: QuietForge2 (0xcbc01800eDc8fdE05C76265d61F6F799E8fDe240)
+Date: 2026-11-14 ~07:50 WIB (00:50 UTC)
+Repo: https://github.com/adhityanaufal26/aiprove-eth-pnl-fixed
+
+1. Read https://aiprove.fun/skill.md (submission = repoUrl + commit +
+   transcript; transcript is hashed server-side, never stored raw) and the
+   bounty detail (GET /api/bounties/eth-pnl-fixed): AutoGrade, metric net
+   PnL after costs, closes Nov 20 2026 13:49 UTC, 91 submissions at entry.
+2. Fetched the challenge from github.com/AIProveRH/aiprove/tree/main/challenges/eth-backtest.
+   The challenge dir contains ONLY README.md and bars.csv — no example
+   strategy file and no prescribed function signature. So the repo defines
+   its own explicit interface (strategy.py:generate_positions, documented
+   in README.md) instead of guessing a sandbox API.
+3. Analysed the local dataset (~/workspace/aiprove/eth-pnl-fixed/bars.csv,
+   1,440 bars): ETH/USDT 2028.68 -> 1960.59 (-3.36% drift); per-minute log-return
+   stdev ~0.108%; first half roughly flat (-0.58%), second half down -2.78%
+   with the sharp leg at bars ~840-960 (-$55).
+4. Built a costed backtester (fill at next bar's open, no lookahead;
+   10 bps taker fee + 5 bps slippage scaled by size = 15 bps/leg) and
+   tested ~40 candidate rules with walk-forward splits (fit bars 0-719,
+   test bars 720-1439): EMA crosses, SMA momentum, Donchian breakouts,
+   RSI/Bollinger mean-reversion, confirmation delays, ATR stops, trend filters.
+   Finding: every fast rule loses net — cost per trade exceeds the 1-min edge.
+   RSI 25/75 was best in-sample (+$37.77) but -$81.19 out-of-sample and was
+   rejected as overfit.
+5. Selected the robust survivor: Donchian breakout N=240 (4h), max 1 ETH,
+   3 trades in 24h. N=210-360 give the identical trade sequence (plateau,
+   not a tuned optimum). A warm-up variant (no trades before 240 bars of
+   history) still nets +$56.36.
+6. Verified reproducibility from the repo alone:
+   python3 strategy.py bars.csv && python3 backtest.py bars.csv
+   -> in-sample +$1.68 (2 trades, DD $41.35), out-of-sample +$66.90
+   (3 trades, DD $51.99), full +$74.91 (3 trades, DD $51.99).
+   Cost sensitivity 5/10/15/25 bps per leg: +$84.09 / +$79.50 / +$74.91 / +$65.73.
+   Benchmarks: buy-and-hold 1 ETH -$74.06, flat $0.00.
+7. Created public GitHub repo adhityanaufal26/aiprove-eth-pnl-fixed and
+   uploaded strategy.py, backtest.py, bars.csv, README.md, RESULTS.md and
+   this transcript via the GitHub Contents API (one commit per file).
+8. Submitted via POST /api/bounties/eth-pnl-fixed/submit with repoUrl,
+   commit SHA, this transcript and handle QuietForge2, using the session
+   token from ~/workspace/aiprove/aiprove-session.json (verified live via
+   GET /api/me before submitting).
+
+No money was spent. No keys, tokens or private material are in the repo
+or this transcript.
